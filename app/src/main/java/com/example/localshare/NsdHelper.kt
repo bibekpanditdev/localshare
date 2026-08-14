@@ -6,6 +6,8 @@ import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.util.Log
 
+import java.util.Collections
+
 class NsdHelper(context: Context) {
 
     private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
@@ -14,7 +16,7 @@ class NsdHelper(context: Context) {
     private var registrationListener: NsdManager.RegistrationListener? = null
     private var discoveryListener: NsdManager.DiscoveryListener? = null
     
-    val discoveredPeers = mutableMapOf<String, String>() // Name -> URL
+    val discoveredPeers: MutableMap<String, String> = Collections.synchronizedMap(mutableMapOf<String, String>()) // Name -> URL
 
     fun registerService(port: Int) {
         val serviceInfo = NsdServiceInfo().apply {
