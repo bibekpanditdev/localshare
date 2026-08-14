@@ -1,9 +1,9 @@
-name: Build Android App
+name: Build and Release Android App
 
 on:
   push:
-    branches: [ main, mobile-phone ]
-  pull_request:
+    tags:
+      - 'v*'
     branches: [ main, mobile-phone ]
 
 jobs:
@@ -24,8 +24,17 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: localshare-app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/build/outputs/apk/debug/app-debug.apk
+          body_path: RELEASE_NOTES.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

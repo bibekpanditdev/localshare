@@ -1,80 +1,40 @@
-# LocalShare
+# 🌐 LocalShare
 
-A high-speed, peer-to-peer local network file server and manager available for **Android** and **Windows**.
+LocalShare is a high-performance, minimalist file-sharing bridge between your Android device and your PC. Designed with a Windows 11 aesthetic, it offers ultra-fast offline transfers and smooth media streaming without needing an internet connection.
 
-Share full storage, dedicated folders, or Windows drive letters with any device (phone, tablet, laptop, smart TV) on the same WiFi or LAN network using a modern browser interface — no internet, accounts, or third-party cloud required.
+## ✨ Key Features
 
----
+- **Win11 UI**: A beautiful, minimalist web interface that feels native to your laptop.
+- **Turbo Uploads**: Parallel 8-stream uploading and 16MB server buffering for max speed.
+- **Smooth Streaming**: Watch long 4K videos smoothly with chunked range-request technology.
+- **Full Offline**: Works 100% without internet. Uses your local WiFi or USB Tethering.
+- **Privacy First**: Choose exactly what to share. Toggle between one folder or full storage.
 
-## Features
+## 🚀 Getting Started
 
-- **Cross-Platform**: Run the server on your Android phone or your Windows PC.
-- **Customizable Storage & Roots**:
-  - **Android**: Share dedicated `LocalShare` folder, full internal storage (`/sdcard`), or SD card.
-  - **Windows**: Share dedicated `LocalShare` folder, all drive letters (`C:\`, `D:\`, etc.), or custom chosen directories via folder picker.
-- **Customizable Port & Hidden Paths**: Change the HTTP port (default `8080`) and blacklist sensitive paths (e.g., `.git`, `node_modules`).
-- **Modern Responsive Web Interface**:
-  - **Categorized View**: Quick filters for Images, Videos, Music, and Documents.
-  - **Multimedia Streaming**: Full HTTP 206 Range request support for smooth video and audio seeking with built-in preview players.
-  - **Fast Multi-File Upload**: Drag & drop support, real-time progress bars, and buffered streaming disk writes.
-  - **Full Management**: List, download, upload, create folders, rename, search/filter, and delete.
-  - **Dark & Light Mode**: Seamless theme switcher.
-- **Instant Connection**:
-  - Automatically detects local IPv4 network addresses (Wi-Fi, Ethernet, Hotspot).
-  - Displays dynamic **QR Code** for scanning with phones to connect instantly without typing IP addresses.
-- **Background Execution**:
-  - **Android**: Persistent Foreground Service with notification.
-  - **Windows**: System Tray integration with background minimize and tray context menu.
+### 1. On your Phone
+1. Install the APK from the [Latest Release](https://github.com/bibekpanditdev/localshare/releases).
+2. Open the app and tap **Start Sharing**.
+3. You will see an address like `http://192.168.1.5:8080`.
 
----
+### 2. On your PC
+1. Open your browser and type in the address shown on your phone.
+2. **To Upload to Phone**: Drag any file or folder from your PC and drop it into the browser.
+3. **To Download to PC**: Browse to your file and click the download icon.
 
-## Project Structure
+## 💡 Performance Tips
 
-```
-LocalShare/
-  ├── app/                     # Android Native Application (Kotlin)
-  │     ├── src/main/java/     # Android UI, Service, & NanoHTTPD server
-  │     └── src/main/assets/   # Embedded web interface
-  │
-  ├── windows/                 # Windows Native Desktop Application (Electron & Node.js)
-  │     ├── src/
-  │     │    ├── main.js       # Electron main process & System Tray
-  │     │    ├── server.js     # High-throughput HTTP File Server & Streaming
-  │     │    ├── preload.js    # Secure IPC bridge
-  │     │    └── ui/           # Windows 11 Fluent desktop control panel
-  │     ├── public/web/        # Enhanced responsive web file manager
-  │     └── package.json
-  │
-  └── README.md
-```
+- **USB Tethering (Extreme Speed)**: For the absolute fastest transfer (bypassing WiFi), connect your phone via USB cable, enable **USB Tethering** in Android settings, and use the `192.168.42.x` IP shown in the app.
+- **Install as App**: On Chrome or Edge, click the **Install** icon in the address bar to add LocalShare to your Windows taskbar for a native experience.
+- **5GHz WiFi**: Use a 5GHz router for high-speed wireless transfers.
+
+## 🛠️ Development
+
+Built with Kotlin, NanoHTTPD, and modern Vanilla JS.
+
+1. Clone the repo: `git clone https://github.com/bibekpanditdev/localshare.git`
+2. Open in Android Studio.
+3. Run on device.
 
 ---
-
-## Windows App: How to Run & Build
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
-
-### 1. Run in Development Mode
-```powershell
-cd windows
-npm install
-npm start
-```
-
-### 2. Build Standalone Windows Executable (.exe)
-```powershell
-cd windows
-npm run pack     # Creates standalone directory build in windows/dist/
-npm run dist     # Generates full NSIS Windows Installer (.exe)
-```
-
----
-
-## Android App: How to Build & Run
-
-1. Open the project root in **Android Studio**.
-2. Build and run on your Android device.
-3. Grant **All Files Access** permission if sharing full storage.
-4. Tap **Start Sharing** and open the URL or scan the QR code.
-
+Created with ❤️ for fast, offline sharing.
