@@ -1,0 +1,17 @@
+<resources>
+    <style name="Theme.LocalShare" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Main theme colors -->
+        <item name="colorPrimary">#4f46e5</item>
+        <item name="colorPrimaryDark">#4338ca</item>
+        <item name="colorAccent">#10b981</item>
+
+        <!-- Status bar and navigation bar -->
+        <item name="android:statusBarColor">#ffffff</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#ffffff</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- Background colors -->
+        <item name="android:windowBackground">#f9fafb</item>
+    </style>
+</resources>

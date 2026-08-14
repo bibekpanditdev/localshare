@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LocalShare - File Manager</title>
+<style>
+  :root {
+    --primary: #0067c0;
+    --primary-hover: #005fb8;
+    --bg-main: #ffffff;
+    --bg-sidebar: #f3f3f3;
+    --text-main: #1b1b1b;
+    --text-muted: #5d5d5d;
+    --border: #e5e5e5;
+    --white: #ffffff;
+    --radius: 8px;
+    --card-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; outline: none; }
+  body {
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+    margin: 0;
+    background: var(--bg-main);
+    color: var(--text-main);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Windows 11 Sidebar */
+  aside {
+    width: 280px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 12px;
+    z-index: 10;
+  }
+  .brand {
+    padding: 16px 12px 24px 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  nav { flex-grow: 1; }
+  .nav-header {
+    padding: 12px 12px 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: background 0.1s;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .nav-item i { width: 18px; margin-right: 12px; font-size: 16px; text-align: center; }
+  .nav-item:hover { background: rgba(0,0,0,0.04); }
+  .nav-item.active {
+    background: rgba(0,0,0,0.06);
+    font-weight: 600;
+    position: relative;
+  }
+  .nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  /* Sync Guide Card */
+  .sync-card {
+    background: #eef2ff;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px;
+    font-size: 12px;
+    border: 1px solid #e0e7ff;
+  }
+  .sync-card h4 { margin: 0 0 8px 0; font-size: 13px; color: var(--primary); }
+  .sync-card p { margin: 4px 0; color: #4338ca; line-height: 1.4; }
+
+  /* Main Content */
+  .content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    height: 60px;
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+  }
+  .breadcrumb span {
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .breadcrumb span:hover { background: #f0f0f0; }
+  .breadcrumb .sep { color: #888; cursor: default; padding: 0; }
+
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background: #fff;
+    transition: 0.1s;
+  }
+  .btn:hover { background: #f9f9f9; border-color: #bbb; }
+  .btn-primary {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+
+  main {
+    padding: 24px;
+    overflow-y: auto;
+    flex-grow: 1;
+    background: #ffffff;
+  }
+
+  /* Win11 Grid View */
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  .file-card {
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+    transition: background 0.1s;
+    cursor: pointer;
+    position: relative;
+    border: 1px solid transparent;
+  }
+  .file-card:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.05);
+  }
+  .file-card.selected {
+    background: rgba(0, 103, 192, 0.1);
+    border-color: rgba(0, 103, 192, 0.2);
+  }
+  /* Optimization: List view for large directories */
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .list-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item:hover { background: #f9fafb; }
+  .list-item .icon { font-size: 24px; margin-right: 16px; }
+  .list-item .name { flex-grow: 1; font-size: 14px; font-weight: 500; }
+  .list-item .meta { font-size: 12px; color: var(--text-muted); margin-left: 16px; }
+  .file-icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 48px;
+  }
+  .file-name {
+    font-size: 12px;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-main);
+  }
+  .file-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .file-icon::before, .icon::before {
+    content: "📄";
+  }
+  .file-icon.folder::before, .icon.folder::before { content: "📁"; }
+  .file-icon.image::before, .icon.image::before { content: "🖼️"; }
+  .file-icon.video::before, .icon.video::before { content: "🎬"; }
+  .file-icon.music::before, .icon.music::before { content: "🎵"; }
+  .file-icon.doc::before, .icon.doc::before { content: "📝"; }
+
+  .file-menu {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    transition: 0.2s;
+  }
+  .file-card:hover .file-menu { opacity: 1; }
+  .menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  #dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+    background: #fff;
+    margin-bottom: 24px;
+  }
+  #dropzone.drag {
+    border-color: var(--primary);
+    background: #eef2ff;
+  }
+
+  #uploadStatus {
+    display: none;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .progress-bar {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    width: 0%;
+    transition: width 0.1s;
+  }
+
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1f2937;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(100px);
+    transition: 0.3s;
+    z-index: 1000;
+  }
+  #toast.show { transform: translateY(0); }
+
+  /* Preview Modal */
+  #previewModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #previewContent {
+    max-width: 90%;
+    max-height: 80%;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #previewContent img, #previewContent video {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  #previewContent audio { width: 400px; }
+  .close-preview {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+  }
+  .preview-name {
+    color: white;
+    margin-top: 20px;
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    aside { width: 70px; }
+    .brand span, .nav-item span { display: none; }
+    .nav-item i { margin-right: 0; }
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand">
+    <span>🌐 LocalShare</span>
+  </div>
+  <nav>
+    <div style="padding: 12px 16px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Storage</div>
+    <div id="rootsList"></div>
+    <div style="padding: 12px 16px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-top: 10px;">Categories</div>
+    <a href="#" class="nav-item active" id="nav-all" onclick="setCategory('all')">
+      <i>📂</i>
+      <span>All Files</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-images" onclick="setCategory('images')">
+      <i>🖼️</i>
+      <span>Images</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-videos" onclick="setCategory('videos')">
+      <i>🎬</i>
+      <span>Videos</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-music" onclick="setCategory('music')">
+      <i>🎵</i>
+      <span>Music</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-docs" onclick="setCategory('docs')">
+      <i>📝</i>
+      <span>Documents</span>
+    </a>
+  </nav>
+
+  <div class="sync-card">
+    <h4>🚀 Sync Fast</h4>
+    <p>1. Drag files here to Sync</p>
+    <p>2. Install as App for speed</p>
+    <p>3. Use 5GHz WiFi / Cable</p>
+  </div>
+</aside>
+
+<div class="content">
+  <header>
+    <div class="breadcrumb" id="breadcrumb">
+      <!-- Breadcrumbs injected here -->
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="createNewFolder()">
+        <i>➕</i>
+        <span>New Folder</span>
+      </button>
+      <label class="btn btn-primary" style="cursor:pointer;">
+        <i>📤</i>
+        <span>Upload</span>
+        <input id="fileInput" type="file" multiple style="display:none;">
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <div id="uploadStatus">
+      <div style="display:flex; justify-content:space-between; font-size: 14px;">
+        <span id="uploadFileName">Uploading...</span>
+        <span id="uploadPercent">0%</span>
+      </div>
+      <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+    </div>
+
+    <div id="dropzone">
+      <i style="font-size: 32px; margin-bottom: 8px; display: block;">☁️</i>
+      <p>Drag and drop files here to upload</p>
+    </div>
+    <div class="file-grid" id="fileGrid">
+      <!-- Files injected here -->
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<div id="previewModal">
+  <span class="close-preview" onclick="closePreview()">&times;</span>
+  <div id="previewContent"></div>
+  <div class="preview-name" id="previewName"></div>
+</div>
+
+<script>
+let currentPath = "";
+let currentCategory = "all";
+let currentRoot = "";
+
+async function loadRoots() {
+  try {
+    const res = await fetch("/api/roots");
+    const roots = await res.json();
+    const list = document.getElementById('rootsList');
+    list.innerHTML = "";
+    roots.forEach((root, i) => {
+      if (i === 0 && !currentRoot) currentRoot = root;
+      const a = document.createElement('a');
+      a.href = "#";
+      a.className = "nav-item" + (currentRoot === root ? " active" : "");
+      a.innerHTML = `<i>💽</i><span>${root}</span>`;
+      a.onclick = () => {
+        currentRoot = root;
+        document.querySelectorAll('#rootsList .nav-item').forEach(el => el.classList.remove('active'));
+        a.classList.add('active');
+        loadPath("");
+      };
+      list.appendChild(a);
+    });
+  } catch (e) {}
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function humanSize(bytes) {
+  if (bytes === 0) return "";
+  const units = ["B","KB","MB","GB"];
+  let i = 0, val = bytes;
+  while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
+  return val.toFixed(val < 10 && i > 0 ? 1 : 0) + " " + units[i];
+}
+
+function getFileType(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) return "image";
+  if (['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(ext)) return "video";
+  if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) return "music";
+  if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(ext)) return "doc";
+  return "file";
+}
+
+function getFileIcon(entry) {
+  if (entry.isDir) return "folder";
+  const type = getFileType(entry.name);
+  return type;
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  bc.innerHTML = "";
+
+  if (currentCategory !== "all") {
+    const s = document.createElement('span');
+    s.textContent = currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
+    bc.appendChild(s);
+    return;
+  }
+
+  const rootSpan = document.createElement('span');
+  rootSpan.innerHTML = '🏠 Storage';
+  rootSpan.onclick = () => loadPath("");
+  bc.appendChild(rootSpan);
+
+  if (currentPath) {
+    const parts = currentPath.split("/").filter(Boolean);
+    let acc = "";
+    parts.forEach(p => {
+      acc += (acc ? "/" : "") + p;
+      const sep = document.createElement('span');
+      sep.className = "sep";
+      sep.textContent = "/";
+      bc.appendChild(sep);
+      const s = document.createElement('span');
+      s.textContent = p;
+      const target = acc;
+      s.onclick = () => loadPath(target);
+      bc.appendChild(s);
+    });
+  }
+}
+
+async function setCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  const el = document.getElementById('nav-' + cat);
+  if (el) el.classList.add('active');
+  loadPath("");
+}
+
+async function loadPath(path) {
+  currentPath = path;
+  renderBreadcrumb();
+  // Don't clear immediately to prevent "flash" of empty screen
+  const grid = document.getElementById('fileGrid');
+
+  try {
+    const url = `/api/list?path=${encodeURIComponent(path)}&category=${currentCategory}&root=${encodeURIComponent(currentRoot)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // Only update UI if we are still on the same path
+    if (currentPath !== path) return;
+
+    grid.innerHTML = "";
+    if (!data.entries || data.entries.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #9ca3af;">No files found</div>';
+      return;
+    }
+
+    // Optimization: Use list view if entry count > 100 for performance
+    const useList = data.entries.length > 100;
+    if (useList) grid.className = "file-list";
+    else grid.className = "file-grid";
+
+    data.entries.forEach(entry => {
+      const iconClass = getFileIcon(entry);
+      let element;
+
+      if (useList) {
+        element = document.createElement('div');
+        element.className = "list-item";
+        element.innerHTML = `
+          <div class="icon ${iconClass}"></div>
+          <div class="name">${entry.name}</div>
+          <div class="meta">${entry.isDir ? "Folder" : humanSize(entry.size)}</div>
+          <button class="menu-btn" onclick="event.stopPropagation(); showMenu('${entry.path}', ${entry.isDir})">⋮</button>
+        `;
+      } else {
+        element = document.createElement('div');
+        element.className = "file-card";
+        element.innerHTML = `
+          <div class="file-icon ${iconClass}"></div>
+          <div class="file-name" title="${entry.name}">${entry.name}</div>
+          <div class="file-info">${entry.isDir ? "Folder" : humanSize(entry.size)}</div>
+          <div class="file-menu">
+            <button class="menu-btn" onclick="event.stopPropagation(); showMenu('${entry.path}', ${entry.isDir})">⋮</button>
+          </div>
+        `;
+      }
+
+      element.onclick = () => {
+        if (entry.isDir) {
+          setCategory('all');
+          loadPath(entry.path);
+        } else {
+          previewFile(entry.path);
+        }
+      };
+
+      element.onmouseenter = () => {
+        // Pre-fetch folder content on hover for "Instant" opening
+        if (entry.isDir) {
+          const url = `/api/list?path=${encodeURIComponent(entry.path)}&category=all&root=${encodeURIComponent(currentRoot)}`;
+          fetch(url);
+        }
+      };
+      grid.appendChild(element);
+    });
+  } catch (err) {
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: red;">Error loading files</div>';
+  }
+}
+
+function showMenu(path, isDir) {
+  const fileName = path.split('/').pop();
+  let msg = `Actions for ${fileName}:\n1. Download\n2. Preview\n3. Rename\n4. Delete`;
+  const action = prompt(msg, "1");
+  if (action === "1") downloadFile(path);
+  else if (action === "2") previewFile(path);
+  else if (action === "3") renameEntry(path);
+  else if (action === "4") deleteEntry(path);
+}
+
+function previewFile(path) {
+  const type = getFileType(path);
+  const url = `/api/download?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&preview=1`;
+  const content = document.getElementById('previewContent');
+  const name = document.getElementById('previewName');
+  content.innerHTML = "";
+  name.textContent = path.split('/').pop();
+
+  if (type === "image") {
+    const img = document.createElement('img');
+    img.src = url;
+    content.appendChild(img);
+  } else  if (type === "video") {
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.autoplay = true;
+    video.preload = "auto";
+    video.style.width = "100%";
+    video.style.height = "auto";
+    // Important for long videos: enable fast seeking
+    video.onloadedmetadata = () => {
+      console.log("Video metadata loaded, duration: " + video.duration);
+    };
+    content.appendChild(video);
+  } else if (type === "music") {
+    const audio = document.createElement('audio');
+    audio.src = url;
+    audio.controls = true;
+    audio.autoplay = true;
+    content.appendChild(audio);
+  } else {
+    window.open(url, '_blank');
+    return;
+  }
+
+  document.getElementById('previewModal').style.display = 'flex';
+}
+
+function closePreview() {
+  const modal = document.getElementById('previewModal');
+  const content = document.getElementById('previewContent');
+  modal.style.display = 'none';
+  content.innerHTML = ""; // Stop video/audio
+}
+
+function downloadFile(path) {
+  window.location.href = `/api/download?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}`;
+}
+
+async function deleteEntry(path) {
+  const token = localStorage.getItem("token_" + path) || "";
+  if (!confirm(`Delete "${path.split('/').pop()}"?`)) return;
+  const res = await fetch(`/api/delete?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&token=${encodeURIComponent(token)}`, { method: "POST" });
+  const data = await res.json();
+  if (data.ok) {
+    toast("Deleted");
+    localStorage.removeItem("token_" + path);
+    loadPath(currentPath);
+  }
+  else toast("Error: " + data.error);
+}
+
+async function renameEntry(path) {
+  const oldName = path.split('/').pop();
+  const newName = prompt("New name:", oldName);
+  if (!newName || newName === oldName) return;
+  const res = await fetch(`/api/rename?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&newName=${encodeURIComponent(newName)}`, { method: "POST" });
+  const data = await res.json();
+  if (data.ok) { toast("Renamed"); loadPath(currentPath); }
+  else toast("Error: " + data.error);
+}
+
+async function createNewFolder() {
+  const name = prompt("Folder name:");
+  if (!name) return;
+  const res = await fetch(`/api/mkdir?path=${encodeURIComponent(currentPath)}&root=${encodeURIComponent(currentRoot)}&name=${encodeURIComponent(name)}`, { method: "POST" });
+  const data = await res.json();
+  if (data.ok) loadPath(currentPath);
+  else toast("Error: " + data.error);
+}
+
+async function uploadFiles(fileList) {
+  const statusDiv = document.getElementById('uploadStatus');
+  const fill = document.getElementById('progressFill');
+  const nameSpan = document.getElementById('uploadFileName');
+  const percentSpan = document.getElementById('uploadPercent');
+
+  statusDiv.style.display = 'block';
+
+  // Process files in parallel (Max 8 for ultra-fast transfers on capable networks)
+  const queue = Array.from(fileList);
+  const activeUploads = [];
+  const MAX_CONCURRENT = 8;
+
+  const runUpload = async (file) => {
+    nameSpan.textContent = `Uploading ${file.name}...`;
+    try {
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const form = new FormData();
+        form.append("file", file);
+
+        // Optimization: Disable some unnecessary XHR overhead
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            if (queue.length < 2) {
+               fill.style.width = percent + '%';
+               percentSpan.textContent = percent + '%';
+            }
+          }
+        });
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              const data = JSON.parse(xhr.responseText);
+              if (data.token) {
+                const fullPath = (currentPath ? currentPath + "/" : "") + data.name;
+                localStorage.setItem("token_" + fullPath, data.token);
+              }
+              resolve();
+            } else reject();
+          }
+        };
+
+        xhr.open("POST", `/api/upload?path=${encodeURIComponent(currentPath)}&root=${encodeURIComponent(currentRoot)}`, true);
+        // Optimization: Use a larger internal buffer for the XHR request
+        xhr.send(form);
+      });
+    } catch (e) {
+      toast("Upload failed: " + file.name);
+    }
+  };
+
+  while (queue.length > 0 || activeUploads.length > 0) {
+    while (queue.length > 0 && activeUploads.length < MAX_CONCURRENT) {
+      const file = queue.shift();
+      const p = runUpload(file).then(() => {
+        activeUploads.splice(activeUploads.indexOf(p), 1);
+      });
+      activeUploads.push(p);
+    }
+    await Promise.race(activeUploads.length > 0 ? activeUploads : [Promise.resolve()]);
+  }
+
+  statusDiv.style.display = 'none';
+  toast("Upload complete");
+  loadPath(currentPath);
+}
+
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  if (e.target.files.length) uploadFiles(e.target.files);
+  e.target.value = "";
+});
+
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dz.classList.remove('drag');
+  if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+});
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('previewModal');
+  if (event.target == modal) closePreview();
+}
+
+async function init() {
+  await loadRoots();
+  loadPath("");
+}
+
+init();
+</script>
+</body>
+</html>
