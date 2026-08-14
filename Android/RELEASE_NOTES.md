@@ -1,4 +1,4 @@
-# 🚀 LocalShare v1.0.4
+# 🚀 LocalShare v1.2.0
 
 ## What's New
 * **Direct File Push (Receive API)**: Other devices can now send files directly to your device via the new `/receive` endpoint.
