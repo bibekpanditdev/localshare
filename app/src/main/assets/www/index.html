@@ -17,6 +17,14 @@
     --radius: 8px;
     --card-shadow: 0 2px 4px rgba(0,0,0,0.04);
   }
+  [data-theme="dark"] {
+    --bg-main: #1c1c1c;
+    --bg-sidebar: #2d2d2c;
+    --text-main: #ffffff;
+    --text-muted: #a0a0a0;
+    --border: #3d3d3c;
+    --white: #2d2d2c;
+  }
   * { box-sizing: border-box; outline: none; }
   body {
     font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -48,6 +56,17 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+  #theme-toggle {
+    margin: 0 12px 16px;
+    padding: 8px;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    background: var(--bg-main);
+    color: var(--text-main);
   }
   nav { flex-grow: 1; }
   .nav-header {
@@ -140,8 +159,9 @@
     font-size: 13px;
     font-weight: 400;
     cursor: pointer;
-    border: 1px solid #ccc;
-    background: #fff;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text-main);
     transition: 0.1s;
   }
   .btn:hover { background: #f9f9f9; border-color: #bbb; }
@@ -387,6 +407,7 @@
   <div class="brand">
     <span>🌐 LocalShare</span>
   </div>
+  <div id="theme-toggle">🌙 Dark Mode</div>
   <nav>
     <div style="padding: 12px 16px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Storage</div>
     <div id="rootsList"></div>
@@ -948,6 +969,19 @@ style.innerHTML = `
 document.head.appendChild(style);
 
 async function init() {
+  // Theme setup
+  const el = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('ls_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  el.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  el.onclick = () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('ls_theme', next);
+    el.textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  };
+
   await loadRoots();
   loadPath("");
   // Refresh peers every 10 seconds
