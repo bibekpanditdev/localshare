@@ -434,6 +434,10 @@
       </div>
     </div>
     <div class="actions">
+      <button class="btn" onclick="syncAll()">
+        <i>🔄</i>
+        <span>Sync All</span>
+      </button>
       <button class="btn" onclick="createNewFolder()">
         <i>➕</i>
         <span>New Folder</span>
@@ -779,6 +783,62 @@ async function createNewFolder() {
   const data = await res.json();
   if (data.ok) loadPath(currentPath);
   else toast("Error: " + data.error);
+}
+
+async function syncAll() {
+  toast("Starting sync with all devices...");
+  try {
+    const res = await fetch('/api/peers');
+    const peers = await res.json();
+    const peerUrls = Object.values(peers);
+
+    if (peerUrls.length === 0) {
+      toast("No other devices found to sync with");
+      return;
+    }
+
+    for (const url of peerUrls) {
+      await syncWithDevice(url);
+    }
+    toast("Sync complete!");
+    loadPath(currentPath);
+  } catch (e) {
+    toast("Sync failed: " + e.message);
+  }
+}
+
+async function syncWithDevice(peerBaseUrl) {
+  // 1. Get list of files from peer's "LocalShare Folder"
+  const res = await fetch(`${peerBaseUrl}/api/list?path=&category=all&root=LocalShare Folder`);
+  const data = await res.json();
+  const peerEntries = data.entries || [];
+
+  // 2. Get local list
+  const localRes = await fetch(`/api/list?path=&category=all&root=LocalShare Folder`);
+  const localData = await localRes.json();
+  const localEntries = localData.entries || [];
+  const localNames = new Set(localEntries.map(e => e.name));
+
+  // 3. Download missing files
+  for (const entry of peerEntries) {
+    if (!entry.isDir && !localNames.has(entry.name)) {
+      toast(`Syncing ${entry.name}...`);
+      try {
+        const fileRes = await fetch(`${peerBaseUrl}/api/download?path=${encodeURIComponent(entry.path)}&root=LocalShare Folder`);
+        const blob = await fileRes.blob();
+
+        const formData = new FormData();
+        formData.append('file', blob, entry.name);
+
+        await fetch(`/api/upload?path=&root=LocalShare Folder`, {
+          method: 'POST',
+          body: formData
+        });
+      } catch (err) {
+        console.error("Failed to sync file", entry.name, err);
+      }
+    }
+  }
 }
 
 async function uploadFiles(fileList) {

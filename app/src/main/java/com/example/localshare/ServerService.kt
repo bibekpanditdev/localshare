@@ -29,6 +29,15 @@ class ServerService : Service() {
 
     private var server: ShareServer? = null
     private var nsdHelper: NsdHelper? = null
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val syncRunnable = object : Runnable {
+        override fun run() {
+            if (isRunning) {
+                performBackgroundSync()
+                handler.postDelayed(this, 60000) // Sync every minute
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -45,7 +54,53 @@ class ServerService : Service() {
 
         startServer()
         startForeground(NOTIF_ID, buildNotification())
+        handler.post(syncRunnable)
         return START_STICKY
+    }
+
+    private fun performBackgroundSync() {
+        val peers = nsdHelper?.discoveredPeers?.values?.toList() ?: return
+        val appDir = File(android.os.Environment.getExternalStorageDirectory(), "LocalShare")
+        if (!appDir.exists()) appDir.mkdirs()
+        
+        val localFiles = appDir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+
+        Thread {
+            for (peerUrl in peers) {
+                try {
+                    val url = java.net.URL("$peerUrl/api/list?path=&category=all&root=LocalShare%20Folder")
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.connectTimeout = 5000
+                    val json = connection.inputStream.bufferedReader().readText()
+                    val entries = org.json.JSONObject(json).getJSONArray("entries")
+                    
+                    for (i in 0 until entries.length()) {
+                        val entry = entries.getJSONObject(i)
+                        val name = entry.getString("name")
+                        val isDir = entry.getBoolean("isDir")
+                        val path = entry.getString("path")
+                        
+                        if (!isDir && !localFiles.contains(name)) {
+                            downloadFile(peerUrl, path, name, appDir)
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("LocalShare", "Sync failed for $peerUrl: ${e.message}")
+                }
+            }
+        }.start()
+    }
+
+    private fun downloadFile(peerUrl: String, path: String, name: String, targetDir: File) {
+        try {
+            val url = java.net.URL("$peerUrl/api/download?path=${java.net.URLEncoder.encode(path, "UTF-8")}&root=LocalShare%20Folder")
+            val connection = url.openConnection() as java.net.HttpURLConnection
+            connection.inputStream.use { input ->
+                File(targetDir, name).outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        } catch (e: Exception) {}
     }
 
     private fun startServer() {
