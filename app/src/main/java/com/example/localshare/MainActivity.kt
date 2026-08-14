@@ -105,12 +105,24 @@ class MainActivity : AppCompatActivity() {
     private fun startServer() {
         val intent = Intent(this, ServerService::class.java)
         ContextCompat.startForegroundService(this, intent)
-        binding.toggleButton.postDelayed({ 
-            refreshUi() 
-            if (!ServerService.isRunning) {
-                Toast.makeText(this, "Failed to start server. Port might be in use.", Toast.LENGTH_LONG).show()
+        
+        // Use multiple attempts to check if server started, as it might take a moment
+        var attempts = 0
+        val maxAttempts = 5
+        val checkServer = object : Runnable {
+            override fun run() {
+                refreshUi()
+                if (ServerService.isRunning) {
+                    // Success
+                } else if (attempts < maxAttempts) {
+                    attempts++
+                    binding.toggleButton.postDelayed(this, 300)
+                } else {
+                    Toast.makeText(this@MainActivity, "Failed to start server. Port might be in use.", Toast.LENGTH_LONG).show()
+                }
             }
-        }, 800)
+        }
+        binding.toggleButton.postDelayed(checkServer, 300)
     }
 
     private fun stopServer() {
