@@ -16,9 +16,9 @@ class NsdHelper(context: Context) {
     
     val discoveredPeers = mutableMapOf<String, String>() // Name -> URL
 
-    fun registerService(port: Int) {
+    fun registerService(port: Int, deviceName: String) {
         val serviceInfo = NsdServiceInfo().apply {
-            serviceName = "localshare-${Build.MODEL}"
+            serviceName = deviceName
             setServiceType(serviceType)
             setPort(port)
         }

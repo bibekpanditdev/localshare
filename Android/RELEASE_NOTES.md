@@ -1,11 +1,11 @@
-# 🚀 LocalShare v1.0.3
+# 🚀 LocalShare v1.0.4
 
 ## What's New
-* **P2P Syncing**: Introducing "Sync All" to automatically synchronize files between all LocalShare devices on the same network.
-* **Device Discovery**: New "Network Devices" sidebar to easily browse and interact with other phones/PCs running LocalShare.
-* **Performance Enhancements**: Optimized 8-stream parallel uploads for even faster transfers.
-* **Windows 11 UI Refresh**: Improved "Acrylic" effect and refined navigation for a smoother experience.
-* **Multi-Root Support**: Improved handling of internal storage and SD cards across devices.
+* **Direct File Push (Receive API)**: Other devices can now send files directly to your device via the new `/receive` endpoint.
+* **Smart Notifications**: Get instant alerts when a file is received, including the sender's name.
+* **Rock-Solid Discovery**: Added Multicast Locking to prevent the device from "disappearing" from the network when the screen is off.
+* **Unique Device Identity**: Devices now use random identifiers to avoid conflicts on busy networks.
+* **P2P Syncing**: "Sync All" feature to keep your LocalShare folder identical across all your devices.
 
 ## Installation
 1. Download the `app-debug.apk` attached below.

@@ -18,8 +18,10 @@ class ShareServer(
     private val context: Context,
     port: Int,
     private val roots: Map<String, File>,
+    private val deviceName: String,
     private val hiddenPaths: Set<String> = emptySet(),
-    private val nsdHelper: NsdHelper? = null
+    private val nsdHelper: NsdHelper? = null,
+    private val onFileReceived: (fileName: String, sender: String?) -> Unit
 ) : NanoHTTPD(port) {
 
     // Simple in-memory tracker for delete authority (resets on server restart)
@@ -44,6 +46,8 @@ class ShareServer(
                 uri == "/api/rename" && session.method == Method.POST -> apiRename(session)
                 uri == "/api/roots" && session.method == Method.GET -> apiRoots()
                 uri == "/api/peers" && session.method == Method.GET -> apiPeers()
+                uri == "/ping" && session.method == Method.GET -> ping()
+                uri == "/receive" && session.method == Method.POST -> receiveFile(session)
                 else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not found")
             }
         } catch (e: Exception) {
@@ -353,5 +357,39 @@ class ShareServer(
         val dest = uniqueIfExists(File(target.parentFile, sanitizeFileName(newName)))
         val success = target.renameTo(dest)
         return if (success) jsonOk() else jsonError(Response.Status.INTERNAL_ERROR, "Could not rename")
+    }
+
+    private fun ping(): Response {
+        val obj = JSONObject()
+        obj.put("ok", true)
+        obj.put("device", deviceName)
+        return newFixedLengthResponse(Response.Status.OK, "application/json", obj.toString())
+    }
+
+    private fun receiveFile(session: IHTTPSession): Response {
+        val files = HashMap<String, String>()
+        session.parseBody(files)
+
+        val params = session.parameters
+        val tmpPath = files["file"] ?: return jsonError(Response.Status.BAD_REQUEST, "No file received")
+        val originalName = params["file"]?.firstOrNull()?.let { File(it).name }
+            ?: "received_${System.currentTimeMillis()}"
+        val sender = params["sender"]?.firstOrNull()
+
+        // Save to the primary "LocalShare Folder" root
+        val targetDir = roots["LocalShare Folder"] ?: roots.values.first()
+        val safeName = sanitizeFileName(originalName)
+        var destFile = File(targetDir, safeName)
+        destFile = uniqueIfExists(destFile)
+
+        File(tmpPath).copyTo(destFile, overwrite = true)
+        File(tmpPath).delete()
+
+        onFileReceived(destFile.name, sender)
+
+        val obj = JSONObject()
+        obj.put("ok", true)
+        obj.put("savedAs", destFile.name)
+        return newFixedLengthResponse(Response.Status.OK, "application/json", obj.toString())
     }
 }
