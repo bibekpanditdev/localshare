@@ -18,7 +18,8 @@ class ShareServer(
     private val context: Context,
     port: Int,
     private val roots: Map<String, File>,
-    private val hiddenPaths: Set<String> = emptySet()
+    private val hiddenPaths: Set<String> = emptySet(),
+    private val nsdHelper: NsdHelper? = null
 ) : NanoHTTPD(port) {
 
     // Simple in-memory tracker for delete authority (resets on server restart)
@@ -42,6 +43,7 @@ class ShareServer(
                 uri == "/api/delete" && session.method == Method.POST -> apiDelete(session)
                 uri == "/api/rename" && session.method == Method.POST -> apiRename(session)
                 uri == "/api/roots" && session.method == Method.GET -> apiRoots()
+                uri == "/api/peers" && session.method == Method.GET -> apiPeers()
                 else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not found")
             }
         } catch (e: Exception) {
@@ -92,6 +94,14 @@ class ShareServer(
         val arr = JSONArray()
         roots.keys.forEach { arr.put(it) }
         return newFixedLengthResponse(Response.Status.OK, "application/json", arr.toString())
+    }
+
+    private fun apiPeers(): Response {
+        val obj = JSONObject()
+        nsdHelper?.discoveredPeers?.forEach { (name, url) ->
+            obj.put(name, url)
+        }
+        return newFixedLengthResponse(Response.Status.OK, "application/json", obj.toString())
     }
 
     private fun apiList(session: IHTTPSession): Response {

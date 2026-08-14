@@ -27,10 +27,12 @@ class ServerService : Service() {
     }
 
     private var server: ShareServer? = null
+    private var nsdHelper: NsdHelper? = null
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
+        nsdHelper = NsdHelper(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -76,9 +78,11 @@ class ServerService : Service() {
             }
         }
 
-        server = ShareServer(applicationContext, port, roots, hiddenPaths)
+        server = ShareServer(applicationContext, port, roots, hiddenPaths, nsdHelper)
         try {
             server?.start(fi.iki.elonen.NanoHTTPD.SOCKET_READ_TIMEOUT, false)
+            nsdHelper?.registerService(port)
+            nsdHelper?.discoverServices()
             isRunning = true
         } catch (e: Exception) {
             isRunning = false
@@ -88,6 +92,7 @@ class ServerService : Service() {
     private fun stopServer() {
         server?.stop()
         server = null
+        nsdHelper?.stop()
         isRunning = false
     }
 
