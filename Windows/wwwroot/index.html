@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LocalShare</title>
+<style>
+  :root {
+    --accent: #0067c0;
+    --accent-dark: #004f96;
+    --bg: #f3f3f3;
+    --panel: #ffffff;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --text-dim: #6b6b6b;
+    --card-hover: rgba(0,0,0,0.05);
+  }
+  [data-theme="dark"] {
+    --bg: #1c1c1c;
+    --panel: #2d2d2c;
+    --border: #3d3d3c;
+    --text: #ffffff;
+    --text-dim: #a0a0a0;
+    --card-hover: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Segoe UI Variable", Tahoma, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+  #sidebar {
+    width: 240px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 12px 8px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  #sidebar h1 {
+    font-size: 16px;
+    margin: 4px 8px 16px;
+    font-weight: 600;
+  }
+  #theme-toggle {
+    margin: 0 8px 16px;
+    padding: 8px;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    background: var(--bg);
+  }
+  #theme-toggle:hover { background: var(--card-hover); }
+  .side-section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 12px 8px 4px;
+    letter-spacing: .04em;
+  }
+  .side-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .side-item:hover { background: #ececec; }
+  .side-item.active { background: #e5f1fb; color: var(--accent); font-weight: 600; }
+  .side-icon { width: 18px; text-align: center; }
+
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #topbar {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #breadcrumb { font-size: 13px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  #breadcrumb .crumb { cursor: pointer; color: var(--accent); }
+  #breadcrumb .crumb:hover { text-decoration: underline; }
+  #breadcrumb .sep { color: var(--text-dim); }
+  #topbar .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn:hover { background: #f1f1f1; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: var(--accent-dark); }
+
+  #content { flex: 1; overflow-y: auto; padding: 16px 20px; position: relative; }
+  #dropzone-hint {
+    display: none;
+    position: absolute; inset: 8px;
+    border: 2px dashed var(--accent);
+    border-radius: 10px;
+    align-items: center; justify-content: center;
+    font-size: 18px; color: var(--accent);
+    background: rgba(0,103,192,0.06);
+    pointer-events: none;
+    z-index: 50;
+  }
+  body.dragging #dropzone-hint { display: flex; }
+
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    position: relative;
+    text-align: center;
+    user-select: none;
+  }
+  .card:hover { border-color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card .icon { font-size: 34px; margin-bottom: 6px; }
+  .card .name {
+    font-size: 12px;
+    word-break: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .card .meta { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .card .menu-btn {
+    position: absolute; top: 4px; right: 4px;
+    border: none; background: transparent; cursor: pointer;
+    font-size: 16px; color: var(--text-dim); padding: 2px 6px; border-radius: 4px;
+  }
+  .card .menu-btn:hover { background: #ececec; }
+
+  #list-view table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #list-view th { text-align: left; padding: 8px; color: var(--text-dim); font-weight: 600; border-bottom: 1px solid var(--border); }
+  #list-view td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  #list-view tr:hover { background: #f8f8f8; }
+  #list-view .name-cell { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+  .context-menu {
+    position: fixed;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    z-index: 200;
+    min-width: 150px;
+    padding: 4px;
+  }
+  .context-menu button {
+    display: block; width: 100%; text-align: left;
+    background: none; border: none; padding: 8px 10px;
+    font-size: 13px; cursor: pointer; border-radius: 4px;
+  }
+  .context-menu button:hover { background: #f1f1f1; }
+  .context-menu button.danger { color: #c42b1c; }
+
+  #empty-state { text-align: center; color: var(--text-dim); margin-top: 60px; font-size: 14px; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center; z-index: 300;
+  }
+  .modal-backdrop.hidden { display: none; }
+  .modal {
+    background: var(--panel); border-radius: 10px; padding: 20px; max-width: 90vw; max-height: 90vh;
+  }
+  .modal img, .modal video { max-width: 82vw; max-height: 78vh; display: block; }
+  .modal audio { width: 400px; }
+  .modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .modal-close { cursor: pointer; border: none; background: none; font-size: 20px; }
+
+  #upload-panel {
+    position: fixed; bottom: 16px; right: 16px; width: 320px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 10px; z-index: 150; display: none;
+    max-height: 300px; overflow-y: auto;
+  }
+  #upload-panel.visible { display: block; }
+  .upload-row { margin-bottom: 8px; font-size: 12px; }
+  .upload-row .name { display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .progress-track { background: #eee; border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: width .15s; }
+
+  #toast-container { position: fixed; bottom: 16px; left: 16px; z-index: 400; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: #1a1a1a; color: #fff; padding: 10px 16px; border-radius: 6px;
+    font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0.95;
+  }
+  .toast.error { background: #c42b1c; }
+
+  #dialog-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center; z-index: 350;
+  }
+  #dialog-backdrop.hidden { display: none; }
+  #dialog-box {
+    background: var(--panel); border-radius: 10px; padding: 20px; width: 320px;
+  }
+  #dialog-box h3 { margin: 0 0 12px; font-size: 15px; }
+  #dialog-box input {
+    width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; margin-bottom: 14px;
+  }
+  #dialog-box .actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>LocalShare</h1>
+  <div id="theme-toggle">🌙 Dark Mode</div>
+
+  <div class="side-section-title">Locations</div>
+  <div id="roots-list"></div>
+
+  <div class="side-section-title">Network Devices</div>
+  <div id="peers-list"></div>
+
+  <div class="side-section-title">Categories</div>
+  <div class="side-item active" data-category="all"><span class="side-icon">🗂️</span>All Files</div>
+  <div class="side-item" data-category="images"><span class="side-icon">🖼️</span>Images</div>
+  <div class="side-item" data-category="videos"><span class="side-icon">🎬</span>Videos</div>
+  <div class="side-item" data-category="music"><span class="side-icon">🎵</span>Music</div>
+  <div class="side-item" data-category="docs"><span class="side-icon">📄</span>Documents</div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div id="breadcrumb"></div>
+    <div class="spacer"></div>
+    <button class="btn" id="sync-all-btn">Sync All</button>
+    <button class="btn" id="new-folder-btn">New Folder</button>
+    <button class="btn primary" id="upload-btn">Upload</button>
+    <input type="file" id="file-input" multiple />
+  </div>
+
+  <div id="content">
+    <div id="dropzone-hint">Drop files to upload</div>
+    <div id="grid"></div>
+    <div id="list-view" style="display:none;">
+      <table>
+        <thead><tr><th>Name</th><th>Size</th><th>Modified</th><th></th></tr></thead>
+        <tbody id="list-body"></tbody>
+      </table>
+    </div>
+    <div id="empty-state" style="display:none;">This folder is empty.</div>
+  </div>
+</div>
+
+<div id="upload-panel"></div>
+<div id="toast-container"></div>
+
+<div class="modal-backdrop hidden" id="preview-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <strong id="preview-title"></strong>
+      <button class="modal-close" id="preview-close">✕</button>
+    </div>
+    <div id="preview-body"></div>
+  </div>
+</div>
+
+<div id="dialog-backdrop" class="hidden">
+  <div id="dialog-box">
+    <h3 id="dialog-title"></h3>
+    <input type="text" id="dialog-input" />
+    <div class="actions">
+      <button class="btn" id="dialog-cancel">Cancel</button>
+      <button class="btn primary" id="dialog-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const state = {
+    root: null,
+    roots: [],
+    path: '',
+    category: 'all',
+    entries: [],
+    baseUrl: '' // Current device being browsed
+  };
+
+  const IMAGE_EXT = ['jpg','jpeg','png','gif','bmp','webp'];
+  const VIDEO_EXT = ['mp4','mkv','avi','mov','wmv','flv'];
+  const AUDIO_EXT = ['mp3','wav','ogg','m4a','flac'];
+
+  const el = (id) => document.getElementById(id);
+  const grid = el('grid');
+  const listView = el('list-view');
+  const listBody = el('list-body');
+  const emptyState = el('empty-state');
+  const breadcrumb = el('breadcrumb');
+  const rootsList = el('roots-list');
+
+  // ---------- token storage (per-file delete authority) ----------
+  function tokenKey(root, path) { return 'ls_token:' + root + ':' + path; }
+  function saveToken(root, path, token) {
+    try { localStorage.setItem(tokenKey(root, path), token); } catch (e) {}
+  }
+  function getToken(root, path) {
+    try { return localStorage.getItem(tokenKey(root, path)) || ''; } catch (e) { return ''; }
+  }
+
+  // ---------- toasts ----------
+  function toast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.textContent = msg;
+    el('toast-container').appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  // ---------- small prompt dialog (replaces window.prompt for nicer UX) ----------
+  function promptDialog(title, defaultValue) {
+    return new Promise((resolve) => {
+      const backdrop = el('dialog-backdrop');
+      const input = el('dialog-input');
+      el('dialog-title').textContent = title;
+      input.value = defaultValue || '';
+      backdrop.classList.remove('hidden');
+      input.focus();
+      input.select();
+
+      function cleanup(result) {
+        backdrop.classList.add('hidden');
+        el('dialog-ok').onclick = null;
+        el('dialog-cancel').onclick = null;
+        input.onkeydown = null;
+        resolve(result);
+      }
+      el('dialog-ok').onclick = () => cleanup(input.value.trim());
+      el('dialog-cancel').onclick = () => cleanup(null);
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') cleanup(input.value.trim());
+        if (e.key === 'Escape') cleanup(null);
+      };
+    });
+  }
+
+  function extOf(name) {
+    const i = name.lastIndexOf('.');
+    return i === -1 ? '' : name.slice(i + 1).toLowerCase();
+  }
+  function iconFor(entry) {
+    if (entry.isDir) return '📁';
+    const ext = extOf(entry.name);
+    if (IMAGE_EXT.includes(ext)) return '🖼️';
+    if (VIDEO_EXT.includes(ext)) return '🎬';
+    if (AUDIO_EXT.includes(ext)) return '🎵';
+    if (ext === 'pdf') return '📕';
+    if (['doc','docx'].includes(ext)) return '📘';
+    if (['xls','xlsx'].includes(ext)) return '📗';
+    if (['ppt','pptx'].includes(ext)) return '📙';
+    return '📄';
+  }
+  function formatSize(bytes) {
+    if (bytes === 0) return '';
+    const units = ['B','KB','MB','GB','TB'];
+    let i = 0, v = bytes;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return v.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+  }
+  function formatDate(ms) {
+    const d = new Date(ms);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  // ---------- API ----------
+  function apiUrl(pathname, params) {
+    const base = state.baseUrl || window.location.origin;
+    const u = new URL(pathname, base);
+    Object.entries(params || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) u.searchParams.set(k, v);
+    });
+    return u.toString();
+  }
+
+  async function loadRoots() {
+    const res = await fetch(apiUrl('/api/roots'));
+    if (!res.ok) {
+      const err = await res.text().catch(() => '');
+      throw new Error(err || 'Failed to load roots');
+    }
+    state.roots = await res.json();
+    if (!state.root || !state.roots.includes(state.root)) state.root = state.roots[0];
+    renderRoots();
+    loadPeers();
+  }
+
+  async function loadPeers() {
+    try {
+      const res = await fetch('/api/peers'); // Always ask local device for peers
+      if (!res.ok) return;
+      const peers = await res.json();
+      renderPeers(peers);
+    } catch (e) {}
+  }
+
+  function renderPeers(peers) {
+    const list = el('peers-list');
+    list.innerHTML = '';
+
+    // Self
+    const self = document.createElement('div');
+    self.className = 'side-item' + (state.baseUrl === '' ? ' active' : '');
+    self.innerHTML = '<span class="side-icon">🏠</span>This PC';
+    self.onclick = () => {
+      state.baseUrl = '';
+      state.root = null;
+      loadRoots().then(() => { state.path = ''; refresh(); });
+    };
+    list.appendChild(self);
+
+    Object.entries(peers).forEach(([name, url]) => {
+      const div = document.createElement('div');
+      div.className = 'side-item' + (state.baseUrl === url ? ' active' : '');
+      div.innerHTML = '<span class="side-icon">📱</span>' + escapeHtml(name);
+      div.onclick = () => {
+        state.baseUrl = url;
+        state.root = null;
+        loadRoots().then(() => { state.path = ''; refresh(); });
+      };
+      list.appendChild(div);
+    });
+  }
+
+  function renderRoots() {
+    rootsList.innerHTML = '';
+    state.roots.forEach((r) => {
+      const div = document.createElement('div');
+      div.className = 'side-item' + (r === state.root ? ' active' : '');
+      div.innerHTML = '<span class="side-icon">' + (r.includes('LocalShare') ? '⭐' : '💾') + '</span>' + r;
+      div.onclick = () => { state.root = r; state.path = ''; refresh(); };
+      rootsList.appendChild(div);
+    });
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch(apiUrl('/api/list', { path: state.path, category: state.category, root: state.root }));
+      const raw = await res.text();
+      let data;
+      try { data = raw ? JSON.parse(raw) : {}; } catch { data = { error: raw || 'Failed to load folder' }; }
+
+      if (!res.ok || data.error) {
+        toast(data.error || 'Failed to load folder', true);
+        return;
+      }
+
+      state.entries = data.entries || [];
+      state.path = data.path || '';
+      renderBreadcrumb();
+      renderEntries();
+      renderRoots();
+    } catch (e) {
+      toast(e && e.message ? e.message : 'Failed to load folder', true);
+    }
+  }
+
+  function renderBreadcrumb() {
+    breadcrumb.innerHTML = '';
+    const rootCrumb = document.createElement('span');
+    rootCrumb.className = 'crumb';
+    rootCrumb.textContent = state.root || 'Home';
+    rootCrumb.onclick = () => { state.path = ''; refresh(); };
+    breadcrumb.appendChild(rootCrumb);
+
+    if (!state.path) return;
+    const parts = state.path.split('/').filter(Boolean);
+    let acc = '';
+    parts.forEach((part) => {
+      acc = acc ? acc + '/' + part : part;
+      const sep = document.createElement('span');
+      sep.className = 'sep'; sep.textContent = ' / ';
+      breadcrumb.appendChild(sep);
+
+      const c = document.createElement('span');
+      c.className = 'crumb';
+      c.textContent = part;
+      const target = acc;
+      c.onclick = () => { state.path = target; refresh(); };
+      breadcrumb.appendChild(c);
+    });
+  }
+
+  function renderEntries() {
+    emptyState.style.display = state.entries.length ? 'none' : 'block';
+    if (state.entries.length > 100) {
+      grid.style.display = 'none';
+      listView.style.display = 'block';
+      renderList();
+    } else {
+      listView.style.display = 'none';
+      grid.style.display = 'grid';
+      renderGrid();
+    }
+  }
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    state.entries.forEach((entry) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<button class="menu-btn">⋮</button>' +
+        '<div class="icon">' + iconFor(entry) + '</div>' +
+        '<div class="name">' + escapeHtml(entry.name) + '</div>' +
+        '<div class="meta">' + (entry.isDir ? '' : formatSize(entry.size)) + '</div>';
+      card.querySelector('.icon').parentNode.addEventListener('dblclick', () => openEntry(entry));
+      card.addEventListener('click', (e) => {
+        if (e.target.classList.contains('menu-btn')) return;
+        openEntry(entry);
+      });
+      card.querySelector('.menu-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showEntryMenu(e.currentTarget, entry);
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function renderList() {
+    listBody.innerHTML = '';
+    state.entries.forEach((entry) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><div class="name-cell"><span>' + iconFor(entry) + '</span><span>' + escapeHtml(entry.name) + '</span></div></td>' +
+        '<td>' + (entry.isDir ? '' : formatSize(entry.size)) + '</td>' +
+        '<td>' + formatDate(entry.modified) + '</td>' +
+        '<td><button class="menu-btn">⋮</button></td>';
+      tr.querySelector('.name-cell').addEventListener('click', () => openEntry(entry));
+      tr.querySelector('.menu-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showEntryMenu(e.currentTarget, entry);
+      });
+      listBody.appendChild(tr);
+    });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function openEntry(entry) {
+    if (entry.isDir) {
+      state.path = entry.path;
+      refresh();
+    } else {
+      const ext = extOf(entry.name);
+      if (IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext) || AUDIO_EXT.includes(ext)) {
+        showPreview(entry);
+      } else {
+        downloadEntry(entry);
+      }
+    }
+  }
+
+  // ---------- context menu ----------
+  let openMenuEl = null;
+  function closeMenu() {
+    if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; }
+  }
+  document.addEventListener('click', closeMenu);
+
+  function showEntryMenu(anchor, entry) {
+    closeMenu();
+    const rect = anchor.getBoundingClientRect();
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.style.top = rect.bottom + 'px';
+    menu.style.left = Math.max(8, rect.right - 150) + 'px';
+
+    const ext = extOf(entry.name);
+    const canPreview = !entry.isDir && (IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext) || AUDIO_EXT.includes(ext));
+
+    const items = [];
+    if (!entry.isDir) items.push(['Download', () => downloadEntry(entry)]);
+    if (canPreview) items.push(['Preview', () => showPreview(entry)]);
+    items.push(['Rename', () => renameEntry(entry)]);
+    items.push(['Delete', () => deleteEntry(entry), true]);
+
+    items.forEach(([label, fn, danger]) => {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      if (danger) btn.className = 'danger';
+      btn.onclick = (e) => { e.stopPropagation(); closeMenu(); fn(); };
+      menu.appendChild(btn);
+    });
+
+    document.body.appendChild(menu);
+    openMenuEl = menu;
+  }
+
+  function downloadEntry(entry) {
+    const url = apiUrl('/api/download', { path: entry.path, root: state.root });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = entry.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function showPreview(entry) {
+    const ext = extOf(entry.name);
+    const url = apiUrl('/api/download', { path: entry.path, root: state.root, preview: 1 });
+    const body = el('preview-body');
+    body.innerHTML = '';
+
+    if (IMAGE_EXT.includes(ext)) {
+      const img = document.createElement('img');
+      img.src = url;
+      body.appendChild(img);
+    } else if (VIDEO_EXT.includes(ext)) {
+      const video = document.createElement('video');
+      video.src = url; video.controls = true; video.autoplay = true;
+      body.appendChild(video);
+    } else if (AUDIO_EXT.includes(ext)) {
+      const audio = document.createElement('audio');
+      audio.src = url; audio.controls = true; audio.autoplay = true;
+      body.appendChild(audio);
+    }
+
+    el('preview-title').textContent = entry.name;
+    el('preview-backdrop').classList.remove('hidden');
+  }
+  el('preview-close').onclick = () => {
+    el('preview-backdrop').classList.add('hidden');
+    el('preview-body').innerHTML = '';
+  };
+  el('preview-backdrop').addEventListener('click', (e) => {
+    if (e.target === el('preview-backdrop')) el('preview-close').onclick();
+  });
+
+  async function renameEntry(entry) {
+    const newName = await promptDialog('Rename "' + entry.name + '" to:', entry.name);
+    if (!newName || newName === entry.name) return;
+
+    const res = await fetch(apiUrl('/api/rename', { path: entry.path, root: state.root, newName }), { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { toast(data.error, true); return; }
+    toast('Renamed');
+    refresh();
+  }
+
+  async function deleteEntry(entry) {
+    if (!confirm('Delete "' + entry.name + '"? This cannot be undone.')) return;
+    const token = getToken(state.root, entry.path);
+    const res = await fetch(apiUrl('/api/delete', { path: entry.path, root: state.root, token }), { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { toast(data.error, true); return; }
+    toast('Deleted');
+    refresh();
+  }
+
+  // ---------- upload (up to 8 concurrent, per-file progress) ----------
+  const MAX_CONCURRENT = 8;
+  const uploadPanel = el('upload-panel');
+
+  function uploadFiles(fileList) {
+    const files = Array.from(fileList);
+    if (!files.length) return;
+
+    uploadPanel.classList.add('visible');
+    let index = 0;
+    let active = 0;
+
+    function next() {
+      if (index >= files.length) return;
+      const file = files[index++];
+      active++;
+      uploadOne(file).finally(() => {
+        active--;
+        next();
+      });
+    }
+    for (let i = 0; i < Math.min(MAX_CONCURRENT, files.length); i++) next();
+  }
+
+  function uploadOne(file) {
+    return new Promise((resolve) => {
+      const row = document.createElement('div');
+      row.className = 'upload-row';
+      row.innerHTML =
+        '<div class="name"><span>' + escapeHtml(file.name) + '</span><span class="pct">0%</span></div>' +
+        '<div class="progress-track"><div class="progress-fill"></div></div>';
+      uploadPanel.appendChild(row);
+      const fill = row.querySelector('.progress-fill');
+      const pct = row.querySelector('.pct');
+
+      const xhr = new XMLHttpRequest();
+      const url = apiUrl('/api/upload', { path: state.path, root: state.root });
+      xhr.open('POST', url);
+
+      xhr.upload.onprogress = (e) => {
+        if (!e.lengthComputable) return;
+        const p = Math.round((e.loaded / e.total) * 100);
+        fill.style.width = p + '%';
+        pct.textContent = p + '%';
+      };
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.ok) {
+            const finalPath = (state.path ? state.path + '/' : '') + data.name;
+            saveToken(state.root, finalPath, data.token);
+            fill.style.width = '100%'; pct.textContent = '100%';
+            toast('Uploaded ' + data.name);
+          } else {
+            toast(data.error || 'Upload failed', true);
+          }
+        } catch (e) {
+          toast('Upload failed', true);
+        }
+        setTimeout(() => { row.remove(); if (!uploadPanel.children.length) uploadPanel.classList.remove('visible'); }, 1200);
+        refresh();
+        resolve();
+      };
+      xhr.onerror = () => {
+        toast('Upload failed: ' + file.name, true);
+        row.remove();
+        resolve();
+      };
+
+      const form = new FormData();
+      form.append('file', file);
+      xhr.send(form);
+    });
+  }
+
+  el('upload-btn').onclick = () => el('file-input').click();
+  el('file-input').onchange = (e) => { uploadFiles(e.target.files); e.target.value = ''; };
+
+  ['dragenter','dragover'].forEach((evt) => {
+    document.addEventListener(evt, (e) => { e.preventDefault(); document.body.classList.add('dragging'); });
+  });
+  ['dragleave','drop'].forEach((evt) => {
+    document.addEventListener(evt, (e) => {
+      e.preventDefault();
+      if (evt === 'drop' && e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+      document.body.classList.remove('dragging');
+    });
+  });
+
+  // ---------- new folder ----------
+  el('new-folder-btn').onclick = async () => {
+    const name = await promptDialog('New folder name:', '');
+    if (!name) return;
+    const res = await fetch(apiUrl('/api/mkdir', { path: state.path, root: state.root, name }), { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { toast(data.error, true); return; }
+    toast('Folder created');
+    refresh();
+  };
+
+  // ---------- sync all ----------
+  el('sync-all-btn').onclick = async () => {
+    toast("Starting sync with all devices...");
+    try {
+      const res = await fetch('/api/peers');
+      const peers = await res.json();
+      const peerUrls = Object.values(peers);
+
+      if (peerUrls.length === 0) {
+        toast("No other devices found to sync with", true);
+        return;
+      }
+
+      for (const url of peerUrls) {
+        await syncWithDevice(url);
+      }
+      toast("Sync complete!");
+      refresh();
+    } catch (e) {
+      toast("Sync failed: " + e.message, true);
+    }
+  };
+
+  async function syncWithDevice(peerBaseUrl) {
+    // 1. Get list of files from peer's "LocalShare Folder"
+    const res = await fetch(`${peerBaseUrl}/api/list?path=&category=all&root=LocalShare Folder`);
+    const data = await res.json();
+    const peerEntries = data.entries || [];
+
+    // 2. Get local list
+    const localRes = await fetch(apiUrl('/api/list', { path: '', category: 'all', root: 'LocalShare Folder' }));
+    const localData = await localRes.json();
+    const localEntries = localData.entries || [];
+    const localNames = new Set(localEntries.map(e => e.name));
+
+    // 3. Download missing files
+    for (const entry of peerEntries) {
+      if (!entry.isDir && !localNames.has(entry.name)) {
+        toast(`Syncing ${entry.name}...`);
+        try {
+          // We "upload" to local by fetching from peer and posting to local
+          const fileRes = await fetch(`${peerBaseUrl}/api/download?path=${encodeURIComponent(entry.path)}&root=LocalShare Folder`);
+          const blob = await fileRes.blob();
+
+          const formData = new FormData();
+          formData.append('file', blob, entry.name);
+
+          await fetch(apiUrl('/api/upload', { path: '', root: 'LocalShare Folder' }), {
+            method: 'POST',
+            body: formData
+          });
+        } catch (err) {
+          console.error("Failed to sync file", entry.name, err);
+        }
+      }
+    }
+  }
+
+  // ---------- category nav ----------
+  document.querySelectorAll('.side-item[data-category]').forEach((item) => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.side-item[data-category]').forEach((i) => i.classList.remove('active'));
+      item.classList.add('active');
+      state.category = item.dataset.category;
+      state.path = '';
+      refresh();
+    });
+  });
+
+  (async function init() {
+    // Theme setup
+    const savedTheme = localStorage.getItem('ls_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    el('theme-toggle').textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    el('theme-toggle').onclick = () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('ls_theme', next);
+      el('theme-toggle').textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    };
+
+    await loadRoots();
+    await refresh();
+    setInterval(loadPeers, 10000);
+  })();
+})();
+</script>
+</body>
+</html>
