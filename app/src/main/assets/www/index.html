@@ -342,10 +342,43 @@
   }
 
   @media (max-width: 768px) {
-    aside { width: 70px; }
-    .brand span, .nav-item span { display: none; }
-    .nav-item i { margin-right: 0; }
+    aside {
+      position: absolute;
+      left: -280px;
+      height: 100%;
+      transition: left 0.3s cubic-bezier(0.7, 0, 0.3, 1);
+      box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+    }
+    aside.open { left: 0; }
+    .brand span, .nav-item span { display: block; }
+
+    header .menu-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      margin-right: 12px;
+      cursor: pointer;
+      font-size: 20px;
+    }
+
+    .file-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 12px;
+    }
+    .file-icon { font-size: 32px; height: 40px; }
   }
+
+  /* Overlay for mobile sidebar */
+  #overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 5;
+  }
+  #overlay.show { display: block; }
 </style>
 </head>
 <body>
@@ -390,10 +423,15 @@
   </div>
 </aside>
 
+<div id="overlay" onclick="toggleSidebar()"></div>
+
 <div class="content">
   <header>
-    <div class="breadcrumb" id="breadcrumb">
-      <!-- Breadcrumbs injected here -->
+    <div style="display: flex; align-items: center;">
+      <div class="menu-toggle" onclick="toggleSidebar()" style="display: none;">☰</div>
+      <div class="breadcrumb" id="breadcrumb">
+        <!-- Breadcrumbs injected here -->
+      </div>
     </div>
     <div class="actions">
       <button class="btn" onclick="createNewFolder()">
@@ -816,6 +854,22 @@ window.onclick = function(event) {
   const modal = document.getElementById('previewModal');
   if (event.target == modal) closePreview();
 }
+
+function toggleSidebar() {
+  const aside = document.querySelector('aside');
+  const overlay = document.getElementById('overlay');
+  aside.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+
+// Add CSS specifically for the menu toggle display
+const style = document.createElement('style');
+style.innerHTML = `
+  @media (max-width: 768px) {
+    header .menu-toggle { display: flex !important; }
+  }
+`;
+document.head.appendChild(style);
 
 async function init() {
   await loadRoots();

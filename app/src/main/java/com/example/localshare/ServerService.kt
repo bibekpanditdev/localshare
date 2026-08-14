@@ -18,6 +18,7 @@ class ServerService : Service() {
         const val CHANNEL_ID = "localshare_channel"
         const val NOTIF_ID = 1
         const val ACTION_STOP = "com.example.localshare.STOP"
+        const val ACTION_STATE_CHANGED = "com.example.localshare.STATE_CHANGED"
 
         @Volatile
         var isRunning = false
@@ -81,11 +82,14 @@ class ServerService : Service() {
         server = ShareServer(applicationContext, port, roots, hiddenPaths, nsdHelper)
         try {
             server?.start(fi.iki.elonen.NanoHTTPD.SOCKET_READ_TIMEOUT, false)
+            isRunning = true
             nsdHelper?.registerService(port)
             nsdHelper?.discoverServices()
-            isRunning = true
+            sendBroadcast(Intent(ACTION_STATE_CHANGED))
         } catch (e: Exception) {
             isRunning = false
+            server = null
+            sendBroadcast(Intent(ACTION_STATE_CHANGED))
         }
     }
 
@@ -94,6 +98,7 @@ class ServerService : Service() {
         server = null
         nsdHelper?.stop()
         isRunning = false
+        sendBroadcast(Intent(ACTION_STATE_CHANGED))
     }
 
     override fun onDestroy() {

@@ -21,6 +21,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var currentUrl: String? = null
 
+    private val stateReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            refreshUi()
+        }
+    }
+
     private val notifPermLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> if (granted) requestStart() }
@@ -52,7 +58,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        ContextCompat.registerReceiver(this, stateReceiver, android.content.IntentFilter(ServerService.ACTION_STATE_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
+
         refreshUi()
+    }
+
+    override fun onDestroy() {
+        unregisterReceiver(stateReceiver)
+        super.onDestroy()
     }
 
     private fun saveSettings() {
