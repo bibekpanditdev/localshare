@@ -13,6 +13,15 @@
     --border: #e0e0e0;
     --text: #1a1a1a;
     --text-dim: #6b6b6b;
+    --card-hover: rgba(0,0,0,0.05);
+  }
+  [data-theme="dark"] {
+    --bg: #1c1c1c;
+    --panel: #2d2d2c;
+    --border: #3d3d3c;
+    --text: #ffffff;
+    --text-dim: #a0a0a0;
+    --card-hover: rgba(255,255,255,0.08);
   }
   * { box-sizing: border-box; }
   body {
@@ -39,6 +48,17 @@
     margin: 4px 8px 16px;
     font-weight: 600;
   }
+  #theme-toggle {
+    margin: 0 8px 16px;
+    padding: 8px;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    background: var(--bg);
+  }
+  #theme-toggle:hover { background: var(--card-hover); }
   .side-section-title {
     font-size: 11px;
     text-transform: uppercase;
@@ -77,6 +97,7 @@
   .btn {
     border: 1px solid var(--border);
     background: var(--panel);
+    color: var(--text);
     padding: 6px 14px;
     border-radius: 6px;
     font-size: 13px;
@@ -212,6 +233,7 @@
 
 <div id="sidebar">
   <h1>LocalShare</h1>
+  <div id="theme-toggle">🌙 Dark Mode</div>
 
   <div class="side-section-title">Locations</div>
   <div id="roots-list"></div>
@@ -827,8 +849,19 @@
     });
   });
 
-  // ---------- init ----------
   (async function init() {
+    // Theme setup
+    const savedTheme = localStorage.getItem('ls_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    el('theme-toggle').textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    el('theme-toggle').onclick = () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('ls_theme', next);
+      el('theme-toggle').textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    };
+
     await loadRoots();
     await refresh();
     setInterval(loadPeers, 10000);
