@@ -129,8 +129,9 @@ class MainActivity : AppCompatActivity() {
         binding.hiddenPathsEdit.isEnabled = !running
         
         if (running) {
-            binding.statusIcon.setImageResource(R.drawable.ic_notification)
             binding.statusIcon.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#10b981"))
+            (binding.statusIcon.parent as? android.view.View)?.backgroundTintList = 
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#dcfce7"))
             
             val ips = NetUtils.getLocalIpAddresses()
             if (ips.isNotEmpty()) {
@@ -142,20 +143,21 @@ class MainActivity : AppCompatActivity() {
                 val urls = ips.map { "http://$it:$port" }
                 currentUrl = urls.first()
                 
-                binding.statusText.text = if (isFull) "Sharing: Full Storage" else "Sharing: /sdcard/LocalShare"
+                binding.statusText.text = if (isFull) "Sharing: All Drives" else "Sharing: App Folder"
                 binding.urlText.text = urls.joinToString("\n")
                 binding.copyButton.visibility = View.VISIBLE
                 binding.copyButton.isEnabled = true
             } else {
-                binding.statusText.text = "Server is ON, but no network detected"
+                binding.statusText.text = "No Connection Detected"
                 binding.urlText.text = ""
                 binding.copyButton.visibility = View.GONE
             }
         } else {
-            binding.statusIcon.setImageResource(R.drawable.ic_notification)
-            binding.statusIcon.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#d1d5db"))
+            binding.statusIcon.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#9ca3af"))
+            (binding.statusIcon.parent as? android.view.View)?.backgroundTintList = 
+                android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#f3f4f6"))
 
-            binding.statusText.text = "Server is OFF"
+            binding.statusText.text = "Server is Inactive"
             binding.urlText.text = ""
             binding.copyButton.visibility = View.GONE
         }
