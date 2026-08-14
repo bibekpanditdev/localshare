@@ -32,7 +32,7 @@ class ShareServer(
     }
 
     override fun serve(session: IHTTPSession): Response {
-        return try {
+        val response = try {
             val uri = session.uri
             when {
                 uri == "/" || uri == "/index.html" -> serveIndex()
@@ -49,6 +49,13 @@ class ShareServer(
         } catch (e: Exception) {
             jsonError(Response.Status.INTERNAL_ERROR, e.message ?: "Server error")
         }
+        
+        // Add CORS headers to allow cross-device communication
+        response.addHeader("Access-Control-Allow-Origin", "*")
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type, Range")
+        
+        return response
     }
 
     // ---------- static UI ----------

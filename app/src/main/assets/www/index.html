@@ -477,10 +477,11 @@
 let currentPath = "";
 let currentCategory = "all";
 let currentRoot = "";
+let currentBaseUrl = ""; // Current device being browsed
 
 async function loadRoots() {
   try {
-    const res = await fetch("/api/roots");
+    const res = await fetch(currentBaseUrl + "/api/roots");
     const roots = await res.json();
     const list = document.getElementById('rootsList');
     list.innerHTML = "";
@@ -504,22 +505,37 @@ async function loadRoots() {
 
 async function loadPeers() {
   try {
-    const res = await fetch("/api/peers");
+    const res = await fetch("/api/peers"); // Always ask the local device for peers
     const peers = await res.json();
     const list = document.getElementById('peersList');
     list.innerHTML = "";
 
-    const names = Object.keys(peers);
-    if (names.length === 0) {
-      list.innerHTML = '<div style="padding: 8px 16px; font-size: 12px; color: var(--text-muted);">Searching...</div>';
-      return;
-    }
+    // Add "Local Phone" option
+    const self = document.createElement('a');
+    self.href = "#";
+    self.className = "nav-item" + (currentBaseUrl === "" ? " active" : "");
+    self.innerHTML = `<i>🏠</i><span>Local Phone</span>`;
+    self.onclick = () => {
+      currentBaseUrl = "";
+      currentRoot = "";
+      loadRoots();
+      loadPath("");
+    };
+    list.appendChild(self);
 
+    const names = Object.keys(peers);
     names.forEach(name => {
+      const url = peers[name];
       const a = document.createElement('a');
-      a.href = peers[name];
-      a.className = "nav-item";
+      a.href = "#";
+      a.className = "nav-item" + (currentBaseUrl === url ? " active" : "");
       a.innerHTML = `<i>📱</i><span>${name}</span>`;
+      a.onclick = () => {
+        currentBaseUrl = url;
+        currentRoot = ""; // Reset root for new device
+        loadRoots();
+        loadPath("");
+      };
       list.appendChild(a);
     });
   } catch (e) {}
@@ -606,7 +622,7 @@ async function loadPath(path) {
   const grid = document.getElementById('fileGrid');
 
   try {
-    const url = `/api/list?path=${encodeURIComponent(path)}&category=${currentCategory}&root=${encodeURIComponent(currentRoot)}`;
+    const url = `${currentBaseUrl}/api/list?path=${encodeURIComponent(path)}&category=${currentCategory}&root=${encodeURIComponent(currentRoot)}`;
     const res = await fetch(url);
     const data = await res.json();
 
@@ -685,7 +701,7 @@ function showMenu(path, isDir) {
 
 function previewFile(path) {
   const type = getFileType(path);
-  const url = `/api/download?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&preview=1`;
+  const url = `${currentBaseUrl}/api/download?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&preview=1`;
   const content = document.getElementById('previewContent');
   const name = document.getElementById('previewName');
   content.innerHTML = "";
@@ -730,13 +746,13 @@ function closePreview() {
 }
 
 function downloadFile(path) {
-  window.location.href = `/api/download?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}`;
+  window.location.href = `${currentBaseUrl}/api/download?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}`;
 }
 
 async function deleteEntry(path) {
   const token = localStorage.getItem("token_" + path) || "";
   if (!confirm(`Delete "${path.split('/').pop()}"?`)) return;
-  const res = await fetch(`/api/delete?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&token=${encodeURIComponent(token)}`, { method: "POST" });
+  const res = await fetch(`${currentBaseUrl}/api/delete?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&token=${encodeURIComponent(token)}`, { method: "POST" });
   const data = await res.json();
   if (data.ok) {
     toast("Deleted");
@@ -750,7 +766,7 @@ async function renameEntry(path) {
   const oldName = path.split('/').pop();
   const newName = prompt("New name:", oldName);
   if (!newName || newName === oldName) return;
-  const res = await fetch(`/api/rename?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&newName=${encodeURIComponent(newName)}`, { method: "POST" });
+  const res = await fetch(`${currentBaseUrl}/api/rename?path=${encodeURIComponent(path)}&root=${encodeURIComponent(currentRoot)}&newName=${encodeURIComponent(newName)}`, { method: "POST" });
   const data = await res.json();
   if (data.ok) { toast("Renamed"); loadPath(currentPath); }
   else toast("Error: " + data.error);
@@ -759,7 +775,7 @@ async function renameEntry(path) {
 async function createNewFolder() {
   const name = prompt("Folder name:");
   if (!name) return;
-  const res = await fetch(`/api/mkdir?path=${encodeURIComponent(currentPath)}&root=${encodeURIComponent(currentRoot)}&name=${encodeURIComponent(name)}`, { method: "POST" });
+  const res = await fetch(`${currentBaseUrl}/api/mkdir?path=${encodeURIComponent(currentPath)}&root=${encodeURIComponent(currentRoot)}&name=${encodeURIComponent(name)}`, { method: "POST" });
   const data = await res.json();
   if (data.ok) loadPath(currentPath);
   else toast("Error: " + data.error);
@@ -810,7 +826,7 @@ async function uploadFiles(fileList) {
           }
         };
 
-        xhr.open("POST", `/api/upload?path=${encodeURIComponent(currentPath)}&root=${encodeURIComponent(currentRoot)}`, true);
+        xhr.open("POST", `${currentBaseUrl}/api/upload?path=${encodeURIComponent(currentPath)}&root=${encodeURIComponent(currentRoot)}`, true);
         // Optimization: Use a larger internal buffer for the XHR request
         xhr.send(form);
       });
