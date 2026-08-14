@@ -9,3 +9,7 @@
 .cxx
 local.properties
 /app/build
+Android/build/
+Android/app/build/
+Windows/bin/
+Windows/obj/

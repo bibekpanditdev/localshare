@@ -91,7 +91,7 @@ public class ServerManager
                 {
                     try
                     {
-                        var json = await client.GetStringAsync($"{peerUrl}/api/list?path=&category=all&root=LocalShare%20Folder");
+                        var json = await client.GetStringAsync($"{peerUrl}/api/list?path=&category=all&root=localshare%20folder");
                         var data = System.Text.Json.JsonDocument.Parse(json);
                         var entries = data.RootElement.GetProperty("entries");
 
@@ -103,7 +103,7 @@ public class ServerManager
 
                             if (!isDir && name != null && !localFiles.Contains(name))
                             {
-                                var fileData = await client.GetByteArrayAsync($"{peerUrl}/api/download?path={Uri.EscapeDataString(path!)}&root=LocalShare%20Folder");
+                                var fileData = await client.GetByteArrayAsync($"{peerUrl}/api/download?path={Uri.EscapeDataString(path!)}&root=localshare%20folder");
                                 await File.WriteAllBytesAsync(Path.Combine(localPath, name), fileData);
                             }
                         }

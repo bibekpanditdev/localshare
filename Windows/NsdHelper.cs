@@ -21,7 +21,7 @@ public class NsdHelper
 
     public NsdHelper()
     {
-        _instanceName = $"{Environment.MachineName}";
+        _instanceName = $"{Environment.MachineName}".ToLowerInvariant();
         _serviceFullName = $"{_instanceName}.{ServiceType}";
     }
 

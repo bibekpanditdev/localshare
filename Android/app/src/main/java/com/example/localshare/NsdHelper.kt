@@ -18,7 +18,7 @@ class NsdHelper(context: Context) {
 
     fun registerService(port: Int) {
         val serviceInfo = NsdServiceInfo().apply {
-            serviceName = "LocalShare-${Build.MODEL}"
+            serviceName = "localshare-${Build.MODEL}"
             setServiceType(serviceType)
             setPort(port)
         }

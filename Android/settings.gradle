@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LocalShare"
+rootProject.name = "localshare"
 include ':app'

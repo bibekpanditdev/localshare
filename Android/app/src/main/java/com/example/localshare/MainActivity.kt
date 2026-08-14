@@ -167,7 +167,7 @@ class MainActivity : AppCompatActivity() {
                 // Show the primary URL clearly, and others below it if they exist
                 currentUrl = "http://${ips.first()}:$port"
                 
-                binding.statusText.text = if (isFull) "Sharing: All Drives" else "Sharing: App Folder"
+                binding.statusText.text = if (isFull) "Sharing: All Drives" else "Sharing: LocalShare Folder"
                 
                 val urlDisplay = if (ips.size > 1) {
                     "Primary: $currentUrl\n" + ips.drop(1).joinToString("\n") { "Alt: http://$it:$port" }

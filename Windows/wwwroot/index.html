@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>LocalShare</title>
+<title>localshare</title>
 <style>
   :root {
     --accent: #0067c0;
@@ -76,8 +76,9 @@
     font-size: 13px;
     color: var(--text);
   }
-  .side-item:hover { background: #ececec; }
+  .side-item:hover { background: var(--card-hover); }
   .side-item.active { background: #e5f1fb; color: var(--accent); font-weight: 600; }
+  [data-theme="dark"] .side-item.active { background: rgba(0,103,192,0.2); }
   .side-icon { width: 18px; text-align: center; }
 
   #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -89,9 +90,10 @@
     align-items: center;
     gap: 12px;
   }
-  #breadcrumb { font-size: 13px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-  #breadcrumb .crumb { cursor: pointer; color: var(--accent); }
-  #breadcrumb .crumb:hover { text-decoration: underline; }
+  #topbar .menu-toggle { display: none; margin-right: 12px; font-size: 24px; cursor: pointer; }
+  #breadcrumb { font-size: 13px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; flex: 1; }
+  #breadcrumb .crumb { cursor: pointer; color: var(--accent); padding: 4px 8px; border-radius: 4px; }
+  #breadcrumb .crumb:hover { background: var(--card-hover); text-decoration: underline; }
   #breadcrumb .sep { color: var(--text-dim); }
   #topbar .spacer { flex: 1; }
   .btn {
@@ -227,12 +229,40 @@
   #dialog-box .actions { display: flex; justify-content: flex-end; gap: 8px; }
 
   input[type=file] { display: none; }
+
+  #overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 90;
+  }
+  #overlay.show { display: block; }
+
+  @media (max-width: 768px) {
+    body { background: var(--bg); }
+    #sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      transform: translateX(-100%);
+      box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+    }
+    #sidebar.open { transform: translateX(0); }
+    #topbar .menu-toggle { display: block !important; }
+    #content { padding: 12px; }
+    #grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    #upload-panel { left: 16px; right: 16px; width: auto; bottom: 16px; }
+  }
 </style>
 </head>
 <body>
 
+<div id="overlay" onclick="toggleSidebar()"></div>
+
 <div id="sidebar">
-  <h1>LocalShare</h1>
+  <div style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 16px; font-size: 20px; font-weight: 600;">
+    <span style="color: var(--accent);">🌐</span> <span>localshare</span>
+  </div>
   <div id="theme-toggle">🌙 Dark Mode</div>
 
   <div class="side-section-title">Locations</div>
@@ -251,7 +281,10 @@
 
 <div id="main">
   <div id="topbar">
-    <div id="breadcrumb"></div>
+    <div style="display: flex; align-items: center;">
+      <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+      <div id="breadcrumb"></div>
+    </div>
     <div class="spacer"></div>
     <button class="btn" id="sync-all-btn">Sync All</button>
     <button class="btn" id="new-folder-btn">New Folder</button>
@@ -308,7 +341,7 @@
   };
 
   const IMAGE_EXT = ['jpg','jpeg','png','gif','bmp','webp'];
-  const VIDEO_EXT = ['mp4','mkv','avi','mov','wmv','flv'];
+  const VIDEO_EXT = ['mp4','mkv','avi','mov','wmv','flv','webm'];
   const AUDIO_EXT = ['mp3','wav','ogg','m4a','flac'];
 
   const el = (id) => document.getElementById(id);
@@ -456,7 +489,7 @@
     state.roots.forEach((r) => {
       const div = document.createElement('div');
       div.className = 'side-item' + (r === state.root ? ' active' : '');
-      div.innerHTML = '<span class="side-icon">' + (r.includes('LocalShare') ? '⭐' : '💾') + '</span>' + r;
+      div.innerHTML = '<span class="side-icon">' + (r.toLowerCase().includes('localshare') ? '⭐' : '💾') + '</span>' + r;
       div.onclick = () => { state.root = r; state.path = ''; refresh(); };
       rootsList.appendChild(div);
     });
@@ -804,8 +837,8 @@
   };
 
   async function syncWithDevice(peerBaseUrl) {
-    // 1. Get list of files from peer's "LocalShare Folder"
-    const res = await fetch(`${peerBaseUrl}/api/list?path=&category=all&root=LocalShare Folder`);
+    // 1. Get list of files from peer's "localshare folder"
+    const res = await fetch(`${peerBaseUrl}/api/list?path=&category=all&root=LocalShare%20Folder`);
     const data = await res.json();
     const peerEntries = data.entries || [];
 
@@ -821,7 +854,7 @@
         toast(`Syncing ${entry.name}...`);
         try {
           // We "upload" to local by fetching from peer and posting to local
-          const fileRes = await fetch(`${peerBaseUrl}/api/download?path=${encodeURIComponent(entry.path)}&root=LocalShare Folder`);
+          const fileRes = await fetch(`${peerBaseUrl}/api/download?path=${encodeURIComponent(entry.path)}&root=localshare%20folder`);
           const blob = await fileRes.blob();
 
           const formData = new FormData();
@@ -848,6 +881,11 @@
       refresh();
     });
   });
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+  }
 
   (async function init() {
     // Theme setup

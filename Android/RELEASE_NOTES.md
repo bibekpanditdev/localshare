@@ -1,11 +1,11 @@
-# 🚀 LocalShare v1.0.0
+# 🚀 LocalShare v1.0.3
 
 ## What's New
-* **Windows 11 Minimalist UI**: A clean, fluent web interface inspired by modern Windows design.
-* **Extreme Performance**: 8-stream parallel uploads and 16MB server-side buffering for maximum transfer speeds.
-* **Instant Navigation**: Hover pre-fetching for lightning-fast folder opening.
-* **P2P-Smooth Streaming**: Asynchronous video playback with smart 2MB chunking for zero-buffering.
-* **Multi-Root Storage**: Simultaneously share your app folder, internal storage, and SD card.
+* **P2P Syncing**: Introducing "Sync All" to automatically synchronize files between all LocalShare devices on the same network.
+* **Device Discovery**: New "Network Devices" sidebar to easily browse and interact with other phones/PCs running LocalShare.
+* **Performance Enhancements**: Optimized 8-stream parallel uploads for even faster transfers.
+* **Windows 11 UI Refresh**: Improved "Acrylic" effect and refined navigation for a smoother experience.
+* **Multi-Root Support**: Improved handling of internal storage and SD cards across devices.
 
 ## Installation
 1. Download the `app-debug.apk` attached below.

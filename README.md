@@ -1,12 +1,12 @@
-# 🌐 LocalShare
+# 🌐 localshare
 
 [![Build and Release Android App](https://github.com/bibekpanditdev/localshare/actions/workflows/build.yml/badge.svg)](https://github.com/bibekpanditdev/localshare/actions/workflows/build.yml)
 
-**LocalShare** is an ultra-fast, minimalist file-sharing bridge between your Android device and your PC. It brings the sleek **Windows 11 aesthetic** to your local network, allowing for high-speed offline transfers and zero-buffer media streaming.
+**localshare** is an ultra-fast, minimalist file-sharing bridge between your Android device and your PC. It brings the sleek **Windows 11 aesthetic** to your local network, allowing for high-speed offline transfers and zero-buffer media streaming.
 
 ---
 
-## 🚀 Why LocalShare?
+## 🚀 Why localshare?
 
 *   **⚡ Extreme Speed**: Optimized with 8-stream parallel uploads and 16MB server buffering. Move GBs of data in minutes.
 *   **🎬 P2P-Style Streaming**: Watch long 4K videos instantly. Our smart 2MB chunking technology eliminates buffering.
@@ -24,7 +24,7 @@
 
 ### 2. Basic Usage
 1.  Connect your phone and PC to the **same WiFi**.
-2.  Open the LocalShare app and tap **Start Sharing**.
+2.  Open the localshare app and tap **Start Sharing**.
 3.  Enter the URL (e.g., `http://192.168.1.5:8080`) into your PC's browser.
 4.  **Syncing**: Drag and drop files from your PC directly into the browser to send them to your phone.
 
@@ -33,7 +33,7 @@
 ## 💡 Performance & Sync Tips
 
 *   **USB Tethering (Fastest Sync)**: Connect via USB cable, enable "USB Tethering" in your phone's settings, and use the `192.168.42.x` IP for maximum speed.
-*   **Install as PWA**: In Chrome/Edge, click the **Install icon** in the address bar to add LocalShare as a standalone Windows app.
+*   **Install as PWA**: In Chrome/Edge, click the **Install icon** in the address bar to add localshare as a standalone Windows app.
 *   **Instant Open**: Hover your mouse over a folder in the browser to pre-fetch its content—it will open the moment you click!
 
 ---

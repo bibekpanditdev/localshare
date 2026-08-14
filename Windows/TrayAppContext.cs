@@ -42,7 +42,7 @@ public class TrayAppContext : ApplicationContext
         {
             Icon = SystemIcons.Application,
             Visible = true,
-            Text = "LocalShare — Server is OFF",
+            Text = "localshare — Server is OFF",
             ContextMenuStrip = menu
         };
         _trayIcon.DoubleClick += (_, _) => ShowSettings();
@@ -78,7 +78,7 @@ public class TrayAppContext : ApplicationContext
         {
             var (ok, error) = await _server.StartAsync();
             if (!ok)
-                MessageBox.Show(error, "LocalShare", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(error, "localshare", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         RefreshStatus();
@@ -95,8 +95,8 @@ public class TrayAppContext : ApplicationContext
         _toggleItem.Text = running ? "Stop Sharing" : "Start Sharing";
 
         var tooltip = running
-            ? $"LocalShare — ON (http://{primary}:{_settings.Port})"
-            : "LocalShare — Server is OFF";
+            ? $"localshare — ON (http://{primary}:{_settings.Port})"
+            : "localshare — Server is OFF";
         _trayIcon.Text = tooltip.Length > 63 ? tooltip[..63] : tooltip; // NotifyIcon.Text max length
 
         _settingsForm?.RefreshFromServerState();
@@ -107,7 +107,7 @@ public class TrayAppContext : ApplicationContext
         var primary = NetUtils.GetLocalIpAddresses().FirstOrDefault() ?? "127.0.0.1";
         var url = $"http://{primary}:{_settings.Port}";
         Clipboard.SetText(url);
-        _trayIcon.ShowBalloonTip(2000, "LocalShare", $"Copied {url} to clipboard", ToolTipIcon.Info);
+        _trayIcon.ShowBalloonTip(2000, "localshare", $"Copied {url} to clipboard", ToolTipIcon.Info);
     }
 
     private async Task ExitAsync()

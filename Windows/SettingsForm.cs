@@ -29,7 +29,7 @@ public class SettingsForm : Form
         _server = server;
         _tray = tray;
 
-        Text = "LocalShare";
+        Text = "localshare";
         ClientSize = new Size(420, 470);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -142,6 +142,6 @@ public class SettingsForm : Form
         var primary = NetUtils.GetLocalIpAddresses().FirstOrDefault() ?? "127.0.0.1";
         var url = $"http://{primary}:{_settings.Port}";
         Clipboard.SetText(url);
-        MessageBox.Show($"Copied {url} to clipboard", "LocalShare", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show($"Copied {url} to clipboard", "localshare", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 }
