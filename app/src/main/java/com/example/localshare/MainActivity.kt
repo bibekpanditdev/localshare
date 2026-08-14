@@ -139,17 +139,23 @@ class MainActivity : AppCompatActivity() {
                 val port = prefs.getInt("port", 8080)
                 val isFull = prefs.getBoolean("full_storage", false)
                 
-                // Construct multiple URLs if there are multiple interfaces
-                val urls = ips.map { "http://$it:$port" }
-                currentUrl = urls.first()
+                // Show the primary URL clearly, and others below it if they exist
+                currentUrl = "http://${ips.first()}:$port"
                 
                 binding.statusText.text = if (isFull) "Sharing: All Drives" else "Sharing: App Folder"
-                binding.urlText.text = urls.joinToString("\n")
+                
+                val urlDisplay = if (ips.size > 1) {
+                    "Primary: $currentUrl\n" + ips.drop(1).joinToString("\n") { "Alt: http://$it:$port" }
+                } else {
+                    currentUrl
+                }
+                
+                binding.urlText.text = urlDisplay
                 binding.copyButton.visibility = View.VISIBLE
                 binding.copyButton.isEnabled = true
             } else {
-                binding.statusText.text = "No Connection Detected"
-                binding.urlText.text = ""
+                binding.statusText.text = "No Active Network"
+                binding.urlText.text = "Please connect to WiFi or Hotspot"
                 binding.copyButton.visibility = View.GONE
             }
         } else {
